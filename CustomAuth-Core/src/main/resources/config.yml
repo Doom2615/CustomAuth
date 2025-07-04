@@ -1,0 +1,93 @@
+# dev/doom/customauth/resources/config.yml
+# CustomAuth Configuration
+
+# Database settings
+database:
+  # MySQL configuration
+  mysql:
+    enabled: false
+    host: localhost
+    port: 3306
+    database: customauth
+    username: root
+    password: password
+    pool-size: 10
+    connection-timeout: 30000
+    max-lifetime: 1800000
+
+  # SQLite configuration (used if MySQL is disabled)
+  sqlite:
+    file: database.db
+
+# Security settings
+security:
+  # Password requirements
+  min_password_length: 8
+  password_regex: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{8,}$"
+  banned_passwords:
+    - "password"
+    - "123456"
+    - "qwerty"
+    - "letmein"
+    - "minecraft"
+    - "admin123"
+
+  # Login attempts
+  max_login_attempts: 3
+  max_ip_attempts: 5
+  ip_ban_duration: 3600  # in seconds
+  login_timeout: 60      # in seconds
+  session_timeout: 7200  # in seconds (2 hours)
+
+  # Session settings
+  session:
+    enabled: true
+    persist: true
+    cleanup_interval: 3600  # in seconds
+
+# Email verification
+email:
+  enabled: false
+  required: false
+  verification_timeout: 24  # in hours
+  smtp:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: your-app-password
+    from: noreply@yourserver.com
+  verification_url: https://yourserver.com/verify
+
+# Bedrock settings
+bedrock:
+  enabled: true
+  auto_register: true
+  auto_login: true
+  store_xuid: true
+  allow_linking: false  # Allow linking Java and Bedrock accounts
+
+# Spawn settings
+spawn:
+  teleport_on_join: true
+  teleport_on_login: false
+  world: world
+  x: 0
+  y: 64
+  z: 0
+  yaw: 0
+  pitch: 0
+
+# Performance settings
+performance:
+  cache_size: 1000
+  cache_expiry: 30  # in minutes
+  async_saves: true
+  batch_size: 100
+  save_interval: 300  # in seconds
+
+# Debug settings
+debug:
+  enabled: false
+  log_level: INFO
+  log_login_attempts: false
+  log_ip_bans: false
