@@ -30,7 +30,7 @@ public class CustomAuth extends JavaPlugin {
     private BedrockAuthHandler bedrockAuthHandler;
     private EmailSender emailSender;
     private SecurityUtils securityUtils;
-    Private DebugLogger debugLogger;
+    private DebugLogger debugLogger;
     
     private final Cache<String, PlayerData> playerCache;
     private final ExecutorService asyncExecutor;
