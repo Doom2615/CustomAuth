@@ -3,7 +3,7 @@ package dev.doom.customauth;
 import dev.doom.customauth.events.AuthListener;
 import dev.doom.customauth.events.PlayerProtectionHandler;
 import dev.doom.customauth.commands.*;
-
+import dev.doom.customauth.utils.DebugLogger;
 import dev.doom.customauth.api.CustomAuthAPI;
 import dev.doom.customauth.bedrock.BedrockAuthHandler;
 import dev.doom.customauth.config.ConfigManager;
