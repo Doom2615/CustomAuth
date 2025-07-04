@@ -1,57 +1,109 @@
-# dev/doom/customauth/resources/messages.yml
+# messages.yml
+# Message configuration for CustomAuth
+
 prefix: "&8[&6Auth&8] &7"
 
 register:
-  required: "%prefix%Please register using &6/register <password> <password>"
+  required: "%prefix%Please register using &6/register <password> <password> [email]"
   usage: "%prefix%Usage: &6/register <password> <password> [email]"
-  success: "%prefix%&aSuccessfully registered!"
+  success: "%prefix%&aSuccessfully registered! You can now log in."
   already_registered: "%prefix%&cYou are already registered!"
   passwords_not_match: "%prefix%&cPasswords do not match!"
-  password_too_weak: "%prefix%&cPassword is too weak! Requirements:\n&7- At least 8 characters\n&7- Contains letters and numbers\n&7- Contains special characters"
+  password_too_weak: |
+    %prefix%&cPassword is too weak! Requirements:
+    &7- At least 8 characters
+    &7- Contains uppercase and lowercase letters
+    &7- Contains numbers
+    &7- Contains special characters
   email_required: "%prefix%&cPlease include your email: /register <password> <password> <email>"
+  invalid_email: "%prefix%&cInvalid email address!"
+  rate_limit: "%prefix%&cPlease wait before trying to register again."
 
 login:
   required: "%prefix%Please login using &6/login <password>"
-  usage: "%prefix%Usage: &6/login <password>"
+  usage: "%prefix%&cUsage: /login <password>"
   success: "%prefix%&aSuccessfully logged in!"
   already_logged_in: "%prefix%&cYou are already logged in!"
   wrong_password: "%prefix%&cWrong password!"
   too_many_attempts: "%prefix%&cToo many login attempts! Please try again later."
   timeout: "%prefix%&cYou took too long to login!"
+  not_registered: "%prefix%&cYou are not registered! Use /register to create an account."
+  auto_login: "%prefix%&aWelcome back! You've been automatically logged in."
+  rate_limit: "%prefix%&cPlease wait before trying to login again."
 
 email:
   verification_sent: "%prefix%&aVerification email sent! Please check your inbox."
   verified: "%prefix%&aEmail successfully verified!"
-  invalid: "%prefix%&cInvalid email address!"
   already_verified: "%prefix%&cEmail already verified!"
   verification_expired: "%prefix%&cVerification link expired! Please request a new one."
+  change_success: "%prefix%&aEmail address successfully changed!"
 
 session:
   expired: "%prefix%&cYour session has expired! Please login again."
   resumed: "%prefix%&aWelcome back! Session resumed."
   created: "%prefix%&aSession created. You will stay logged in for %time% hours."
+  invalidated: "%prefix%&cYour session has been invalidated for security reasons."
 
 security:
-  ip_banned: "%prefix%&cToo many failed attempts from your IP. Please try again after %time% minutes."
+  ip_banned: "%prefix%&cToo many failed attempts. Please try again in %time% minutes."
   must_login: "%prefix%&cYou must login first!"
   unsafe_password: "%prefix%&cThis password is too common. Please choose a different one."
+  ip_rate_limit: "%prefix%&cToo many attempts from your IP. Please wait."
 
 bedrock:
   auto_login: "%prefix%&aWelcome back! You've been automatically authenticated."
   auto_register: "%prefix%&aYour account has been automatically registered."
   already_registered: "%prefix%&cYou're already registered as a Bedrock player."
   account_conflict: "%prefix%&cThis username is already registered as a Java account."
+  no_password_change: "%prefix%&cBedrock players cannot change passwords."
+  no_logout: "%prefix%&cBedrock players cannot logout manually."
+  security_mismatch: "%prefix%&cDevice verification failed. Please contact an administrator."
+
+changepassword:
+  usage: "%prefix%&cUsage: /changepassword <current> <new>"
+  success: "%prefix%&aPassword successfully changed!"
+  wrong_password: "%prefix%&cCurrent password is incorrect!"
+  same_password: "%prefix%&cNew password cannot be the same as your current password!"
+  password_too_weak: "%prefix%&cNew password is too weak!"
+
+resetpassword:
+  usage: "%prefix%&cUsage: /resetpassword"
+  no_email: "%prefix%&cNo email address associated with this account!"
+  email_sent: "%prefix%&aPassword reset instructions have been sent to your email."
+  success: "%prefix%&aPassword successfully reset!"
+  token_invalid: "%prefix%&cInvalid or expired reset token!"
 
 admin:
+  help_header: "&6=== CustomAuth Admin Commands ==="
+  help_unregister: "&f/authadmin unregister <player> &7- Unregister a player"
+  help_forcelogin: "&f/authadmin forcelogin <player> &7- Force login a player"
+  help_reload: "&f/authadmin reload &7- Reload configuration"
+  help_status: "&f/authadmin status &7- Show plugin status"
+  help_cleanup: "&f/authadmin cleanup &7- Clean up old data"
+  help_reset2fa: "&f/authadmin reset2fa <player> &7- Reset 2FA for a player"
+  help_info: "&f/authadmin info <player> &7- Show player information"
+
   no_permission: "%prefix%&cYou don't have permission to use this command!"
-  player_unregistered: "%prefix%&aPlayer successfully unregistered."
+  player_not_found: "%prefix%&cPlayer not found!"
+  unregister_success: "%prefix%&aPlayer %player% has been unregistered."
   reload_success: "%prefix%&aConfiguration reloaded!"
   cleanup_success: "%prefix%&aCleanup completed!"
-  status: "%prefix%&aServer Status:\n&7- Online players: &f%online%\n&7- Authenticated: &f%authenticated%\n&7- Storage: &f%storage%"
+  forced_login: "%prefix%&aYou have been logged in by an administrator."
+  reset2fa_success: "%prefix%&a2FA has been reset for %player%."
+
+  status_header: "&6=== CustomAuth Status ==="
+  status_online: "&7Online players: &f%count%"
+  status_authenticated: "&7Authenticated: &f%count%"
+  status_bedrock: "&7Bedrock players: &f%count%"
+  status_storage: "&7Storage type: &f%type%"
 
 error:
   console_command: "%prefix%&cThis command can only be used by players!"
+  no_permission: "%prefix%&cYou don't have permission to use this command!"
+  not_logged_in: "%prefix%&cYou must be logged in to use this command!"
+  player_not_found: "%prefix%&cPlayer not found!"
+  invalid_arguments: "%prefix%&cInvalid arguments!"
+  database_error: "%prefix%&cA database error occurred. Please try again later."
+  email_failed: "%prefix%&cFailed to send email. Please try again later."
   registration_failed: "%prefix%&cFailed to register. Please try again later."
   login_failed: "%prefix%&cFailed to login. Please try again later."
-  database_error: "%prefix%&cA database error occurred. Please try again later."
-  invalid_session: "%prefix%&cInvalid session. Please login again."
