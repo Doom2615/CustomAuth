@@ -1,4 +1,3 @@
-// CustomAuth.java
 package dev.doom.customauth;
 
 import dev.doom.customauth.api.CustomAuthAPI;
@@ -155,4 +154,24 @@ public class CustomAuth extends JavaPlugin {
     public ConfigManager getConfigManager() { return configManager; }
     public LanguageManager getLanguageManager() { return languageManager; }
     public Database getDatabase() { return database; }
-    
+    public FileStorage getFileStorage() { return fileStorage; }
+    public SessionManager getSessionManager() { return sessionManager; }
+    public BedrockAuthHandler getBedrockAuthHandler() { return bedrockAuthHandler; }
+    public EmailSender getEmailSender() { return emailSender; }
+    public SecurityUtils getSecurityUtils() { return securityUtils; }
+    public Cache<String, PlayerData> getPlayerCache() { return playerCache; }
+    public ExecutorService getAsyncExecutor() { return asyncExecutor; }
+
+    // Helper methods
+    public CompletableFuture<Void> runAsync(Runnable task) {
+        return CompletableFuture.runAsync(task, asyncExecutor);
+    }
+
+    public void cachePlayerData(String username, PlayerData data) {
+        playerCache.put(username.toLowerCase(), data);
+    }
+
+    public PlayerData getCachedPlayerData(String username) {
+        return playerCache.getIfPresent(username.toLowerCase());
+    }
+}
