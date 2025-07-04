@@ -26,7 +26,7 @@ jobs:
         with:
           path: |
             ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**CustomAuth-Core/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
@@ -36,7 +36,7 @@ jobs:
           languages: java
 
       - name: Build with Maven
-        run: mvn -B verify
+        run: mvn -B verify --file CustomAuth-Core/
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
