@@ -1,8 +1,7 @@
-# dev/doom/customauth/resources/config.yml
+# config.yml
 # CustomAuth Configuration
 
-# Database settings
-database:
+storage:
   # MySQL configuration
   mysql:
     enabled: false
@@ -15,61 +14,74 @@ database:
     connection-timeout: 30000
     max-lifetime: 1800000
 
-  # SQLite configuration (used if MySQL is disabled)
-  sqlite:
-    file: database.db
+  # File storage configuration (used if MySQL is disabled)
+  file:
+    batch-size: 100
+    save-interval: 300  # seconds
+    backup-interval: 86400  # 24 hours in seconds
+    keep-backups: 5
+    inactive-days: 90  # Days before marking account as inactive
 
-# Security settings
 security:
   # Password requirements
   min_password_length: 8
+  max_password_length: 32
   password_regex: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{8,}$"
+  require_special_char: true
+  require_number: true
+  require_uppercase: true
   banned_passwords:
     - "password"
     - "123456"
     - "qwerty"
-    - "letmein"
     - "minecraft"
     - "admin123"
 
-  # Login attempts
+  # Login settings
   max_login_attempts: 3
   max_ip_attempts: 5
-  ip_ban_duration: 3600  # in seconds
-  login_timeout: 60      # in seconds
-  session_timeout: 7200  # in seconds (2 hours)
+  ip_ban_duration: 3600  # seconds
+  login_timeout: 60  # seconds
+  session_timeout: 7200  # seconds (2 hours)
+  allow_pitch_yaw_movement: true
+  hide_unauthed_players: true
+  invalidate_sessions_on_password_change: true
 
-  # Session settings
-  session:
-    enabled: true
-    persist: true
-    cleanup_interval: 3600  # in seconds
+  # Rate limiting
+  login_rate_limit: 1  # attempts per second
+  register_rate_limit: 1  # attempts per second
+  ip_rate_limit: 5  # attempts per minute
 
 # Email verification
 email:
   enabled: false
   required: false
-  verification_timeout: 24  # in hours
+  verification_timeout: 24  # hours
   smtp:
     host: smtp.gmail.com
     port: 587
     username: your-email@gmail.com
     password: your-app-password
     from: noreply@yourserver.com
+    ssl: true
+    starttls: true
   verification_url: https://yourserver.com/verify
 
-# Bedrock settings
+# Bedrock settings (requires Floodgate)
 bedrock:
   enabled: true
   auto_register: true
   auto_login: true
   store_xuid: true
   allow_linking: false  # Allow linking Java and Bedrock accounts
+  device_verification: true  # Verify device ID on login
 
 # Spawn settings
 spawn:
   teleport_on_join: true
   teleport_on_login: false
+  teleport_after_register: true
+  teleport_after_logout: true
   world: world
   x: 0
   y: 64
@@ -80,10 +92,10 @@ spawn:
 # Performance settings
 performance:
   cache_size: 1000
-  cache_expiry: 30  # in minutes
+  cache_expiry: 30  # minutes
   async_saves: true
   batch_size: 100
-  save_interval: 300  # in seconds
+  save_interval: 300  # seconds
 
 # Debug settings
 debug:
@@ -91,3 +103,4 @@ debug:
   log_level: INFO
   log_login_attempts: false
   log_ip_bans: false
+  log_sql_queries: false

@@ -1,38 +1,42 @@
-// Main class (dev/doom/customauth/CustomAuth.java)
+// CustomAuth.java
 package dev.doom.customauth;
 
+import dev.doom.customauth.api.CustomAuthAPI;
 import dev.doom.customauth.bedrock.BedrockAuthHandler;
-import dev.doom.customauth.handlers.*;
-import dev.doom.customauth.storage.*;
-import dev.doom.customauth.metrics.CustomAuthMetrics;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import dev.doom.customauth.config.ConfigManager;
+import dev.doom.customauth.config.LanguageManager;
+import dev.doom.customauth.models.PlayerData;
+import dev.doom.customauth.session.SessionManager;
+import dev.doom.customauth.storage.Database;
+import dev.doom.customauth.storage.FileStorage;
+import dev.doom.customauth.utils.EmailSender;
+import dev.doom.customauth.utils.SecurityUtils;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.google.common.util.concurrent.RateLimiter;
 import java.util.concurrent.*;
 import java.time.Duration;
 
 public class CustomAuth extends JavaPlugin {
     private boolean isFolia;
-    private final Cache<String, PlayerData> playerCache;
-    private final RateLimiter loginRateLimiter;
-    private final ExecutorService asyncExecutor;
+    private ConfigManager configManager;
+    private LanguageManager languageManager;
     private Database database;
     private FileStorage fileStorage;
-    private ConfigManager configManager;
-    private SecurityManager securityManager;
     private SessionManager sessionManager;
-    private EmailVerification emailVerification;
-    private CustomAuthMetrics metrics;
     private BedrockAuthHandler bedrockAuthHandler;
-
+    private EmailSender emailSender;
+    private SecurityUtils securityUtils;
+    
+    private final Cache<String, PlayerData> playerCache;
+    private final ExecutorService asyncExecutor;
+    
     public CustomAuth() {
         this.playerCache = Caffeine.newBuilder()
             .maximumSize(1000)
             .expireAfterAccess(30, TimeUnit.MINUTES)
             .build();
-        this.loginRateLimiter = RateLimiter.create(10.0);
+            
         this.asyncExecutor = Executors.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors()
         );
@@ -44,44 +48,47 @@ public class CustomAuth extends JavaPlugin {
         this.isFolia = checkFolia();
 
         // Initialize configurations
-        saveDefaultConfig();
         this.configManager = new ConfigManager(this);
-        this.securityManager = new SecurityManager(this);
-        this.sessionManager = new SessionManager(this);
+        this.languageManager = new LanguageManager(this);
+        this.securityUtils = new SecurityUtils(this);
 
         // Initialize storage
-        if (getConfig().getBoolean("mysql.enabled")) {
+        if (getConfig().getBoolean("storage.mysql.enabled")) {
             this.database = new Database(this);
             database.initialize();
         } else {
             this.fileStorage = new FileStorage(this);
         }
 
-        // Initialize email verification if enabled
-        if (getConfig().getBoolean("email.enabled")) {
-            this.emailVerification = new EmailVerification(this);
-        }
+        // Initialize session manager
+        this.sessionManager = new SessionManager(this);
 
-        // Initialize metrics
-        this.metrics = new CustomAuthMetrics(this);
+        // Initialize email sender if enabled
+        if (getConfig().getBoolean("email.enabled")) {
+            this.emailSender = new EmailSender(this);
+        }
 
         // Initialize Bedrock support
         if (getServer().getPluginManager().getPlugin("floodgate") != null) {
             this.bedrockAuthHandler = new BedrockAuthHandler(this);
             getServer().getPluginManager().registerEvents(bedrockAuthHandler, this);
+            getLogger().info("Bedrock support enabled (Floodgate detected)");
         }
 
         // Register events and commands
-        registerHandlers();
+        registerEvents();
         registerCommands();
 
-        // Start cleanup task
-        startCleanupTask();
+        // Start cleanup tasks
+        startCleanupTasks();
+
+        // Setup API
+        CustomAuthAPI.setPlugin(this);
 
         getLogger().info("CustomAuth has been enabled!");
     }
 
-    private void registerHandlers() {
+    private void registerEvents() {
         getServer().getPluginManager().registerEvents(new AuthListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerProtectionHandler(this), this);
     }
@@ -89,8 +96,8 @@ public class CustomAuth extends JavaPlugin {
     private void registerCommands() {
         getCommand("register").setExecutor(new RegisterCommand(this));
         getCommand("login").setExecutor(new LoginCommand(this));
-        getCommand("changepassword").setExecutor(new ChangePasswordCommand(this));
         getCommand("logout").setExecutor(new LogoutCommand(this));
+        getCommand("changepassword").setExecutor(new ChangePasswordCommand(this));
         getCommand("authadmin").setExecutor(new AdminCommand(this));
     }
 
@@ -112,12 +119,12 @@ public class CustomAuth extends JavaPlugin {
         }
     }
 
-    private void startCleanupTask() {
+    private void startCleanupTasks() {
+        // Session cleanup
         scheduleTask(() -> {
             sessionManager.cleanupSessions();
-            securityManager.cleanupIpBans();
             playerCache.cleanUp();
-        }, 20L * 60 * 30, 20L * 60 * 30); // Run every 30 minutes
+        }, 20L * 60 * 30, 20L * 60 * 30); // Every 30 minutes
     }
 
     @Override
@@ -132,7 +139,7 @@ public class CustomAuth extends JavaPlugin {
             asyncExecutor.shutdownNow();
         }
 
-        // Save all cached data
+        // Save all data
         if (fileStorage != null) {
             fileStorage.saveAll();
         }
@@ -145,32 +152,7 @@ public class CustomAuth extends JavaPlugin {
 
     // Getters
     public boolean isFolia() { return isFolia; }
-    public Cache<String, PlayerData> getPlayerCache() { return playerCache; }
-    public RateLimiter getLoginRateLimiter() { return loginRateLimiter; }
-    public ExecutorService getAsyncExecutor() { return asyncExecutor; }
-    public Database getDatabase() { return database; }
-    public FileStorage getFileStorage() { return fileStorage; }
     public ConfigManager getConfigManager() { return configManager; }
-    public SecurityManager getSecurityManager() { return securityManager; }
-    public SessionManager getSessionManager() { return sessionManager; }
-    public EmailVerification getEmailVerification() { return emailVerification; }
-    public CustomAuthMetrics getMetrics() { return metrics; }
-    public BedrockAuthHandler getBedrockAuthHandler() { return bedrockAuthHandler; }
-
-    // Helper methods
-    public CompletableFuture<Void> runAsync(Runnable task) {
-        return CompletableFuture.runAsync(task, asyncExecutor);
-    }
-
-    public boolean canProcessLogin() {
-        return loginRateLimiter.tryAcquire();
-    }
-
-    public void cachePlayerData(String username, PlayerData data) {
-        playerCache.put(username.toLowerCase(), data);
-    }
-
-    public PlayerData getCachedPlayerData(String username) {
-        return playerCache.getIfPresent(username.toLowerCase());
-    }
-      }
+    public LanguageManager getLanguageManager() { return languageManager; }
+    public Database getDatabase() { return database; }
+    

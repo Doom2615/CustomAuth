@@ -1,0 +1,65 @@
+# emails.yml
+# Email templates for CustomAuth
+
+verification_email:
+  subject: "Verify your account on %server_name%"
+  body: |
+    Hello %username%,
+
+    Thank you for registering on %server_name%!
+
+    To complete your registration, please click the following link:
+    %verification_link%
+
+    This link will expire in 24 hours.
+
+    If you did not register on our server, please ignore this email.
+
+    Best regards,
+    %server_name% Team
+
+password_reset_email:
+  subject: "Password reset request for %server_name%"
+  body: |
+    Hello %username%,
+
+    A password reset has been requested for your account on %server_name%.
+
+    To reset your password, please click the following link:
+    %reset_link%
+
+    This link will expire in 1 hour.
+
+    If you did not request this reset, please ignore this email.
+
+    Best regards,
+    %server_name% Team
+
+password_changed_email:
+  subject: "Password changed on %server_name%"
+  body: |
+    Hello %username%,
+
+    Your password has been successfully changed on %server_name%.
+
+    If you did not make this change, please contact an administrator immediately.
+
+    Best regards,
+    %server_name% Team
+
+new_device_login_email:
+  subject: "New device login on %server_name%"
+  body: |
+    Hello %username%,
+
+    A login has been detected from a new device:
+
+    IP Address: %ip_address%
+    Location: %location%
+    Device: %device%
+    Time: %time%
+
+    If this wasn't you, please change your password immediately.
+
+    Best regards,
+    %server_name% Team

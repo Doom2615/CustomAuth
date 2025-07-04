@@ -1,0 +1,52 @@
+# plugin.yml
+name: CustomAuth
+version: '${project.version}'
+main: dev.doom.customauth.CustomAuth
+api-version: '1.21'
+folia-supported: true
+authors: [Doom]
+description: A secure authentication plugin with Folia and Bedrock support
+website: https://yourwebsite.com
+softdepend: [floodgate, PlaceholderAPI]
+
+commands:
+  register:
+    description: Register your account
+    usage: /register <password> <password> [email]
+    aliases: [reg]
+  login:
+    description: Login to your account
+    usage: /login <password>
+    aliases: [l]
+  logout:
+    description: Logout from your account
+    usage: /logout
+  changepassword:
+    description: Change your password
+    usage: /changepassword <oldpassword> <newpassword>
+    aliases: [changepw]
+  resetpassword:
+    description: Reset your password
+    usage: /resetpassword
+    aliases: [resetpw]
+  authadmin:
+    description: Admin commands
+    usage: /authadmin <command>
+    permission: customauth.admin
+
+permissions:
+  customauth.*:
+    description: Gives access to all CustomAuth commands
+    children:
+      customauth.admin: true
+      customauth.changepassword: true
+      customauth.resetpassword: true
+  customauth.admin:
+    description: Gives access to admin commands
+    default: op
+  customauth.changepassword:
+    description: Allows changing password
+    default: true
+  customauth.resetpassword:
+    description: Allows resetting password
+    default: true

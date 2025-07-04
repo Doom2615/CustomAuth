@@ -1,5 +1,5 @@
-// dev/doom/customauth/handlers/AuthListener.java
-package dev.doom.customauth.handlers;
+// dev/doom/customauth/events/AuthListener.java
+package dev.doom.customauth.events;
 
 import dev.doom.customauth.CustomAuth;
 import dev.doom.customauth.models.PlayerData;
@@ -7,8 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
 import java.time.Duration;
 
 public class AuthListener implements Listener {
@@ -28,7 +27,7 @@ public class AuthListener implements Listener {
             return;
         }
 
-        // Use appropriate scheduler based on server type
+        // Schedule using appropriate scheduler
         if (plugin.isFolia()) {
             player.getScheduler().run(plugin, task -> handlePlayerJoin(player), () -> {});
         } else {
@@ -40,25 +39,47 @@ public class AuthListener implements Listener {
     private void handlePlayerJoin(Player player) {
         String username = player.getName().toLowerCase();
 
-        // Check for session
+        // Check IP ban
+        if (!plugin.getSecurityUtils().isIpAllowed(player.getAddress().getAddress())) {
+            player.kickPlayer(plugin.getLanguageManager().getMessage("security.ip_banned"));
+            return;
+        }
+
+        // Check session
         if (plugin.getSessionManager().hasValidSession(player)) {
             plugin.getSessionManager().resumeSession(player);
             return;
         }
 
+        // Hide player if configured
+        if (plugin.getConfig().getBoolean("security.hide_unauthed_players")) {
+            plugin.getServer().getOnlinePlayers().forEach(p -> p.hidePlayer(plugin, player));
+        }
+
         // Check registration status
         boolean isRegistered = plugin.getDatabase() != null ? 
-            plugin.getDatabase().isRegistered(username) :
-            plugin.getFileStorage().loadPlayer(username) != null;
+            plugin.getDatabase().isRegistered(username).join() :
+            plugin.getFileStorage().isRegistered(username);
 
         if (!isRegistered) {
-            player.sendMessage(plugin.getConfigManager().getMessage("register.required"));
+            player.sendMessage(plugin.getLanguageManager().getMessage("register.required"));
         } else {
-            player.sendMessage(plugin.getConfigManager().getMessage("login.required"));
+            player.sendMessage(plugin.getLanguageManager().getMessage("login.required"));
         }
 
         // Start authentication timeout
         startAuthenticationTimeout(player);
+
+        // Teleport to spawn if configured
+        if (plugin.getConfig().getBoolean("spawn.teleport_on_join")) {
+            if (plugin.isFolia()) {
+                player.getScheduler().run(plugin, task -> 
+                    player.teleport(plugin.getConfigManager().getSpawnLocation()), () -> {});
+            } else {
+                plugin.getServer().getScheduler().runTask(plugin, () ->
+                    player.teleport(plugin.getConfigManager().getSpawnLocation()));
+            }
+        }
     }
 
     private void startAuthenticationTimeout(Player player) {
@@ -67,38 +88,50 @@ public class AuthListener implements Listener {
         if (plugin.isFolia()) {
             player.getScheduler().runDelayed(plugin, task -> {
                 if (player.isOnline() && !isAuthenticated(player)) {
-                    player.kick(plugin.getConfigManager().getMessage("login.timeout"));
+                    player.kick(plugin.getLanguageManager().getMessage("login.timeout"));
                 }
             }, () -> {}, Duration.ofSeconds(timeout));
         } else {
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline() && !isAuthenticated(player)) {
-                    player.kick(plugin.getConfigManager().getMessage("login.timeout"));
+                    player.kickPlayer(plugin.getLanguageManager().getMessage("login.timeout"));
                 }
             }, timeout * 20L);
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
-        String username = event.getPlayer().getName().toLowerCase();
+        Player player = event.getPlayer();
+        String username = player.getName().toLowerCase();
+
+        // Save final data
         PlayerData data = plugin.getCachedPlayerData(username);
-        
         if (data != null) {
-            // Save final data
             if (plugin.getDatabase() != null) {
                 plugin.getDatabase().updateLoginData(username, data.getLastIp(), data.getLastLogin());
             } else {
                 plugin.getFileStorage().queueSave(data);
             }
-            
-            // Clear cache
-            plugin.getPlayerCache().invalidate(username);
         }
+
+        // Clear cache
+        plugin.getPlayerCache().invalidate(username);
+
+        // Remove from hidden players list if necessary
+        if (plugin.getConfig().getBoolean("security.hide_unauthed_players")) {
+            plugin.getServer().getOnlinePlayers().forEach(p -> p.showPlayer(plugin, player));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerKick(PlayerKickEvent event) {
+        // Handle same as quit
+        onPlayerQuit(new PlayerQuitEvent(event.getPlayer(), event.getLeaveMessage()));
     }
 
     private boolean isAuthenticated(Player player) {
         PlayerData data = plugin.getCachedPlayerData(player.getName().toLowerCase());
         return data != null && data.isLoggedIn();
     }
-}
+                }
