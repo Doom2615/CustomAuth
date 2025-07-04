@@ -1,6 +1,9 @@
-// CustomAuth.java
 package dev.doom.customauth;
 
+import dev.doom.customauth.events.AuthListener;
+import dev.doom.customauth.events.PlayerProtectionHandler;
+import dev.doom.customauth.commands.*;
+import dev.doom.customauth.utils.DebugLogger;
 import dev.doom.customauth.api.CustomAuthAPI;
 import dev.doom.customauth.bedrock.BedrockAuthHandler;
 import dev.doom.customauth.config.ConfigManager;
@@ -27,6 +30,7 @@ public class CustomAuth extends JavaPlugin {
     private BedrockAuthHandler bedrockAuthHandler;
     private EmailSender emailSender;
     private SecurityUtils securityUtils;
+    private DebugLogger debugLogger;
     
     private final Cache<String, PlayerData> playerCache;
     private final ExecutorService asyncExecutor;
@@ -51,6 +55,7 @@ public class CustomAuth extends JavaPlugin {
         this.configManager = new ConfigManager(this);
         this.languageManager = new LanguageManager(this);
         this.securityUtils = new SecurityUtils(this);
+        this.debugLogger = new DebugLogger(this);
 
         // Initialize storage
         if (getConfig().getBoolean("storage.mysql.enabled")) {
@@ -151,8 +156,29 @@ public class CustomAuth extends JavaPlugin {
     }
 
     // Getters
+    public DebugLogger getDebugLogger() { return debugLogger; }
     public boolean isFolia() { return isFolia; }
     public ConfigManager getConfigManager() { return configManager; }
     public LanguageManager getLanguageManager() { return languageManager; }
     public Database getDatabase() { return database; }
-    
+    public FileStorage getFileStorage() { return fileStorage; }
+    public SessionManager getSessionManager() { return sessionManager; }
+    public BedrockAuthHandler getBedrockAuthHandler() { return bedrockAuthHandler; }
+    public EmailSender getEmailSender() { return emailSender; }
+    public SecurityUtils getSecurityUtils() { return securityUtils; }
+    public Cache<String, PlayerData> getPlayerCache() { return playerCache; }
+    public ExecutorService getAsyncExecutor() { return asyncExecutor; }
+
+    // Helper methods
+    public CompletableFuture<Void> runAsync(Runnable task) {
+        return CompletableFuture.runAsync(task, asyncExecutor);
+    }
+
+    public void cachePlayerData(String username, PlayerData data) {
+        playerCache.put(username.toLowerCase(), data);
+    }
+
+    public PlayerData getCachedPlayerData(String username) {
+        return playerCache.getIfPresent(username.toLowerCase());
+    }
+}

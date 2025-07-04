@@ -262,4 +262,163 @@ public class Database {
             dataSource.close();
         }
     }
-                        }
+    public CompletableFuture<Boolean> saveSession(String username, String token, long expiry, String ip) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "INSERT INTO sessions (username, token, expires, ip) VALUES (?, ?, ?, ?) " +
+                        "ON DUPLICATE KEY UPDATE token = ?, expires = ?, ip = ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, username.toLowerCase());
+                stmt.setString(2, token);
+                stmt.setLong(3, expiry);
+                stmt.setString(4, ip);
+                stmt.setString(5, token);
+                stmt.setLong(6, expiry);
+                stmt.setString(7, ip);
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to save session: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<Boolean> updateSessionExpiry(String username, String token, long expiry) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "UPDATE sessions SET expires = ? WHERE username = ? AND token = ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, expiry);
+                stmt.setString(2, username.toLowerCase());
+                stmt.setString(3, token);
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to update session expiry: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<Boolean> deleteSession(String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "DELETE FROM sessions WHERE username = ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, username.toLowerCase());
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to delete session: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<Boolean> deleteAllSessions(String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "DELETE FROM sessions WHERE username = ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, username.toLowerCase());
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to delete all sessions: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<SessionData> getSession(String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT * FROM sessions WHERE username = ? AND expires > ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, username.toLowerCase());
+                stmt.setLong(2, System.currentTimeMillis());
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    return new SessionData(
+                        rs.getString("username"),
+                        rs.getString("token"),
+                        rs.getLong("expires"),
+                        rs.getString("ip"),
+                        plugin.getServer().getOfflinePlayer(username).getUniqueId(),
+                        System.currentTimeMillis()
+                    );
+                }
+                return null;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to get session: " + e.getMessage());
+                return null;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<Boolean> cleanupExpiredSessions(long currentTime) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "DELETE FROM sessions WHERE expires < ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, currentTime);
+                stmt.executeUpdate();
+                return true;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to cleanup expired sessions: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<Boolean> updatePassword(String username, String hashedPassword) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "UPDATE players SET password = ? WHERE username = ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, hashedPassword);
+                stmt.setString(2, username.toLowerCase());
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to update password: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<Boolean> reset2FA(String username) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "UPDATE players SET verified = false, verification_token = NULL WHERE username = ?";
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, username.toLowerCase());
+                return stmt.executeUpdate() > 0;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to reset 2FA: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+
+    public CompletableFuture<Boolean> cleanup() {
+        return CompletableFuture.supplyAsync(() -> {
+            try (Connection conn = dataSource.getConnection()) {
+                // Cleanup expired sessions
+                try (PreparedStatement stmt = conn.prepareStatement(
+                    "DELETE FROM sessions WHERE expires < ?")) {
+                    stmt.setLong(1, System.currentTimeMillis());
+                    stmt.executeUpdate();
+                }
+
+                // Cleanup old verification tokens
+                try (PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE players SET verification_token = NULL WHERE verification_token IS NOT NULL AND last_login < ?")) {
+                    stmt.setLong(1, System.currentTimeMillis() - (24 * 60 * 60 * 1000)); // 24 hours
+                    stmt.executeUpdate();
+                }
+
+                return true;
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Failed to perform cleanup: " + e.getMessage());
+                return false;
+            }
+        }, plugin.getAsyncExecutor());
+    }
+ }

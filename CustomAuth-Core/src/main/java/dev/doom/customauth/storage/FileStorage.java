@@ -1,6 +1,10 @@
 // dev/doom/customauth/storage/FileStorage.java
 package dev.doom.customauth.storage;
 
+import java.util.concurrent.CompletableFuture;
+import dev.doom.customauth.models.SessionData;
+import java.util.UUID;
+
 import dev.doom.customauth.CustomAuth;
 import dev.doom.customauth.models.PlayerData;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -252,7 +256,25 @@ public class FileStorage {
         }
     }
 
-    public CompletableFuture<List<String>> searchPlayers(String pattern) {
+public CompletableFuture<List<String>> searchPlayers(String pattern) {
+    return CompletableFuture.supplyAsync(() -> {
+        List<String> matches = new ArrayList<>();
+        File[] files = dataFolder.listFiles((dir, name) -> name.endsWith(".yml"));
+        
+        if (files != null) {
+            for (File file : files) {
+                String username = file.getName().replace(".yml", "");
+                if (username.toLowerCase().contains(pattern.toLowerCase())) {
+                    matches.add(username);
+                }
+            }
+        }
+        
+        return matches;
+    }, plugin.getAsyncExecutor());
+}
+
+    /*public CompletableFuture<List<String>> searchPlayers(String pattern) {
         return CompletableFuture.supplyAsync(() -> {
             List<String> matches = new ArrayList<>();
             File[] files = dataFolder.listFiles((dir, name) -> name.endsWith(".yml"));
@@ -268,7 +290,7 @@ public class FileStorage {
             
             return matches;
         }, plugin.getAsyncExecutor());
-    }
+    }*/
 
     public void cleanup() {
         long now = System.currentTimeMillis();
@@ -294,6 +316,71 @@ public class FileStorage {
                 }
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to process cleanup for " + file.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+    public void saveSession(SessionData sessionData) {
+        File sessionFile = new File(dataFolder, "sessions/" + sessionData.username().toLowerCase() + ".yml");
+        YamlConfiguration config = new YamlConfiguration();
+        
+        config.set("username", sessionData.username());
+        config.set("token", sessionData.token());
+        config.set("expires", sessionData.expiry());
+        config.set("ip", sessionData.ip());
+        config.set("uuid", sessionData.uuid().toString());
+        config.set("created_at", sessionData.createdAt());
+        
+        try {
+            config.save(sessionFile);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save session: " + e.getMessage());
+        }
+    }
+
+    public void deleteSession(String username) {
+        File sessionFile = new File(dataFolder, "sessions/" + username.toLowerCase() + ".yml");
+        if (sessionFile.exists()) {
+            sessionFile.delete();
+        }
+    }
+
+    public void deleteAllSessions(String username) {
+        File sessionsFolder = new File(dataFolder, "sessions");
+        File[] files = sessionsFolder.listFiles((dir, name) -> 
+            name.startsWith(username.toLowerCase() + "_"));
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
+        }
+    }
+
+    public SessionData loadSession(String username) {
+        File sessionFile = new File(dataFolder, "sessions/" + username.toLowerCase() + ".yml");
+        if (!sessionFile.exists()) {
+            return null;
+        }
+
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(sessionFile);
+        return new SessionData(
+            config.getString("username"),
+            config.getString("token"),
+            config.getLong("expires"),
+            config.getString("ip"),
+            UUID.fromString(config.getString("uuid")),
+            config.getLong("created_at")
+        );
+    }
+
+    public void cleanupExpiredSessions(long currentTime) {
+        File sessionsFolder = new File(dataFolder, "sessions");
+        File[] files = sessionsFolder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                if (config.getLong("expires") < currentTime) {
+                    file.delete();
+                }
             }
         }
     }

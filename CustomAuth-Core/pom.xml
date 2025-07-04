@@ -19,9 +19,9 @@
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
         <repository>
-            <id>opencollab-snapshot</id>
-            <url>https://repo.opencollab.dev/maven-snapshots/</url>
-        </repository>
+    <id>opencollab-snapshot</id>
+    <url>https://repo.opencollab.dev/main/</url>
+</repository>
     </repositories>
 
     <dependencies>
@@ -63,6 +63,11 @@
             <version>2.2.4-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+         <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>31.1-jre</version>
+    </dependency>
     </dependencies>
 
     <build>

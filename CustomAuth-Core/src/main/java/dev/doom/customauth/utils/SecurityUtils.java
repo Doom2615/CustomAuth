@@ -4,6 +4,9 @@ package dev.doom.customauth.utils;
 import dev.doom.customauth.CustomAuth;
 import org.bukkit.entity.Player;
 import org.mindrot.jbcrypt.BCrypt;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
@@ -143,5 +146,33 @@ public class SecurityUtils {
             return parts[0] + "." + parts[1] + ".*.*";
         }
         return ip;
+    }
+    public String generateSecureToken(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String saltedInput = input + System.currentTimeMillis() + secureRandom.nextLong();
+            byte[] hash = digest.digest(saltedInput.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            plugin.getLogger().severe("Failed to generate secure token: " + e.getMessage());
+            // Fallback to a simple but still secure token
+            byte[] randomBytes = new byte[32];
+            secureRandom.nextBytes(randomBytes);
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+        }
+    }
+
+    public String generateSessionToken() {
+        byte[] randomBytes = new byte[32];
+        secureRandom.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
+
+    public String generateVerificationToken() {
+        return generateSecureToken("verify");
+    }
+
+    public String generateResetToken() {
+        return generateSecureToken("reset");
     }
 }
