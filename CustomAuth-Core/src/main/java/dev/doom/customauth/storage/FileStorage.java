@@ -1,6 +1,10 @@
 // dev/doom/customauth/storage/FileStorage.java
 package dev.doom.customauth.storage;
 
+import java.util.concurrent.CompletableFuture;
+import dev.doom.customauth.models.SessionData;
+import java.util.UUID;
+
 import dev.doom.customauth.CustomAuth;
 import dev.doom.customauth.models.PlayerData;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -252,7 +256,25 @@ public class FileStorage {
         }
     }
 
-    public CompletableFuture<List<String>> searchPlayers(String pattern) {
+public CompletableFuture<List<String>> searchPlayers(String pattern) {
+    return CompletableFuture.supplyAsync(() -> {
+        List<String> matches = new ArrayList<>();
+        File[] files = dataFolder.listFiles((dir, name) -> name.endsWith(".yml"));
+        
+        if (files != null) {
+            for (File file : files) {
+                String username = file.getName().replace(".yml", "");
+                if (username.toLowerCase().contains(pattern.toLowerCase())) {
+                    matches.add(username);
+                }
+            }
+        }
+        
+        return matches;
+    }, plugin.getAsyncExecutor());
+}
+
+    /*public CompletableFuture<List<String>> searchPlayers(String pattern) {
         return CompletableFuture.supplyAsync(() -> {
             List<String> matches = new ArrayList<>();
             File[] files = dataFolder.listFiles((dir, name) -> name.endsWith(".yml"));
@@ -268,7 +290,7 @@ public class FileStorage {
             
             return matches;
         }, plugin.getAsyncExecutor());
-    }
+    }*/
 
     public void cleanup() {
         long now = System.currentTimeMillis();
