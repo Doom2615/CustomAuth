@@ -6,9 +6,7 @@ public record BedrockPlayerData(
     String xuid,
     String deviceOs,
     String deviceId,
-    String languageCode,
-    long lastLogin,
-    boolean isPremium
+    String languageCode
 ) {
     public boolean isSameDevice(BedrockPlayerData other) {
         return deviceId.equals(other.deviceId) && 
@@ -25,9 +23,7 @@ public record BedrockPlayerData(
             xuid,
             "UNKNOWN",
             "UNKNOWN",
-            "en_US",
-            System.currentTimeMillis(),
-            false
+            "en_US"
         );
     }
 
@@ -37,9 +33,7 @@ public record BedrockPlayerData(
             xuid,
             newDeviceOs,
             newDeviceId,
-            languageCode,
-            System.currentTimeMillis(),
-            isPremium
+            languageCode
         );
     }
 
@@ -49,9 +43,7 @@ public record BedrockPlayerData(
             xuid,
             deviceOs,
             deviceId,
-            languageCode,
-            System.currentTimeMillis(),
-            isPremium
+            languageCode
         );
     }
 }
