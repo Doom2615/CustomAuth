@@ -83,7 +83,7 @@ public class AuthListener implements Listener {
     }
 
     private void startAuthenticationTimeout(Player player) {
-        long timeout = plugin.getConfig().getLong("security.login_timeout");
+        long timeout = plugin.getConfig().getLong("login.timeout");
         
         if (plugin.isFolia()) {
             player.getScheduler().runDelayed(plugin, task -> {
