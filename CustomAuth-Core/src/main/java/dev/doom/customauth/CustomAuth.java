@@ -1,5 +1,9 @@
 package dev.doom.customauth;
 
+import dev.doom.customauth.events.AuthListener;
+import dev.doom.customauth.events.PlayerProtectionHandler;
+import dev.doom.customauth.commands.*;
+
 import dev.doom.customauth.api.CustomAuthAPI;
 import dev.doom.customauth.bedrock.BedrockAuthHandler;
 import dev.doom.customauth.config.ConfigManager;
@@ -26,6 +30,7 @@ public class CustomAuth extends JavaPlugin {
     private BedrockAuthHandler bedrockAuthHandler;
     private EmailSender emailSender;
     private SecurityUtils securityUtils;
+    Private DebugLogger debugLogger;
     
     private final Cache<String, PlayerData> playerCache;
     private final ExecutorService asyncExecutor;
@@ -50,6 +55,7 @@ public class CustomAuth extends JavaPlugin {
         this.configManager = new ConfigManager(this);
         this.languageManager = new LanguageManager(this);
         this.securityUtils = new SecurityUtils(this);
+        this.debugLogger = new DebugLogger(this);
 
         // Initialize storage
         if (getConfig().getBoolean("storage.mysql.enabled")) {
@@ -150,6 +156,7 @@ public class CustomAuth extends JavaPlugin {
     }
 
     // Getters
+    public DebugLogger getDebugLogger() { return debugLogger; }
     public boolean isFolia() { return isFolia; }
     public ConfigManager getConfigManager() { return configManager; }
     public LanguageManager getLanguageManager() { return languageManager; }
