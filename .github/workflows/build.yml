@@ -30,7 +30,7 @@ jobs:
       run: mvn -B package --file CustomAuth-Core/pom.xml
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: CustomAuth
         path: target/CustomAuth-*.jar
