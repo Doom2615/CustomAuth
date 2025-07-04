@@ -297,4 +297,69 @@ public class FileStorage {
             }
         }
     }
+    public void saveSession(SessionData sessionData) {
+        File sessionFile = new File(dataFolder, "sessions/" + sessionData.username().toLowerCase() + ".yml");
+        YamlConfiguration config = new YamlConfiguration();
+        
+        config.set("username", sessionData.username());
+        config.set("token", sessionData.token());
+        config.set("expires", sessionData.expiry());
+        config.set("ip", sessionData.ip());
+        config.set("uuid", sessionData.uuid().toString());
+        config.set("created_at", sessionData.createdAt());
+        
+        try {
+            config.save(sessionFile);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save session: " + e.getMessage());
+        }
+    }
+
+    public void deleteSession(String username) {
+        File sessionFile = new File(dataFolder, "sessions/" + username.toLowerCase() + ".yml");
+        if (sessionFile.exists()) {
+            sessionFile.delete();
+        }
+    }
+
+    public void deleteAllSessions(String username) {
+        File sessionsFolder = new File(dataFolder, "sessions");
+        File[] files = sessionsFolder.listFiles((dir, name) -> 
+            name.startsWith(username.toLowerCase() + "_"));
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
+        }
+    }
+
+    public SessionData loadSession(String username) {
+        File sessionFile = new File(dataFolder, "sessions/" + username.toLowerCase() + ".yml");
+        if (!sessionFile.exists()) {
+            return null;
+        }
+
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(sessionFile);
+        return new SessionData(
+            config.getString("username"),
+            config.getString("token"),
+            config.getLong("expires"),
+            config.getString("ip"),
+            UUID.fromString(config.getString("uuid")),
+            config.getLong("created_at")
+        );
+    }
+
+    public void cleanupExpiredSessions(long currentTime) {
+        File sessionsFolder = new File(dataFolder, "sessions");
+        File[] files = sessionsFolder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                if (config.getLong("expires") < currentTime) {
+                    file.delete();
+                }
+            }
+        }
+    }
 }
